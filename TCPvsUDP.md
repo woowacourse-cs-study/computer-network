@@ -63,6 +63,7 @@
     - ACK를 받은 서버도 포트를 CLOSED로 닫음
 
 <img src="./img/tcpudp3.png" width="550" />
+
 ---
 
 # UDP (User Datagram Protocol)
@@ -88,6 +89,7 @@
 ⇒ UDP는 신뢰성보다는 **간단한 데이터를 빠른 속도로 전송해야하는 연속성이 중요한 서비스**에 사용 (ex. 실시간 서비스 streaming)
 
 <img src="./img/tcpudp4.png" width="550" />
+
 ---
 
 # TCP vs UDP
