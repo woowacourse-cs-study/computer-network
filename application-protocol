@@ -1,0 +1,125 @@
+### 응용계층 프로토콜과 그 역할  
+원격 접속, 파일 전송, 전자 메일, 네트워킹 지원, 호스트 초기화, 원격 호스트 관리  
+
+- socket programming  
+소켓은 프로세스가 데이터를 보내거나 받기 위해 데이터를 쓰거나 읽는 것  
+protocol, ip 주소, port number로 정의  
+떨어져있는 server socket, client socket의 통신  
+
+application layer에서 socket을 통해 tcp/udp로 가는 것  
+SOCK_STREAM: TCP 소켓  
+SOCK_DGRAM: UDP 소켓  
+server의 
+socket(): socket 생성 -> 
+bind(): ip와 port번호 설정 -> 
+listen(): 수신 대기열을 만들어 몇 개의 클라이언트 대기시킬지 결정 ->  
+accept(): client connection 올떄까지 block  
+
+client의 
+socket(): 소켓을 연다 ->  
+connect(): 통신할 서버의 설정된 ip와 port 번호에 통신 시도 ->  
+accept(): 서버가 클라이언트의 socket descriptor 반환 ->  
+write() -> read() -> close()  
+
+통신할때 다 사용  
+
+- HTTP  
+http는 서버와 클라이언트 간 통신을 한다.  
+request와 response는 상호 교환된다.  
+request: 메서드, uri, 프로토콜 버전, 옵션 리퀘스트 헤더필드, 엔티티  
+response: 프로토콜 버전, 상태 코드, 옵션 리스펀드 헤더필드, 바디  
+http는 상태를 유지하지 않는 프로토콜  
+리퀘스트 uri로 리소스를 식별  
+
+    - GET: 리소스 획득  
+    - POST: 엔티티 전송  
+    - PUT: 파일 전송  
+    - HEAD: 메시지 헤더 취득  
+    - DELETE: 파일 삭제  
+    - OPTIONS: 제공하고 있는 메서드의 문의  
+    - TRACE: 경로조사  
+    리퀘스트 보낸 곳에 어떤 리퀘스트가 가공되어 있는지 조사(크로스 사이트 트레이싱 보안 문제)  
+    - CONNECT: 프록시에 터널링 요구  
+    서버에서 클라이언트 직접 연결되면 http, tls 이용한 연결되면 https, https를 위한 프록시를 통하는 것을 CONNECT 메서드를 통함  
+
+    - 지속 연결로 접속량 절약  
+    하나 보낼때마다 tcp 연결과 종료를 하여 통신량 증가  
+    지속 연결이란 어느 한쪽이 명시적으로 연결을 종료하지 않는 이상 tcp 연결을 유지하는 것  
+    tcp 연결과 종료를 반복하지 않아 서버에 대한 부하 경감  
+
+    - 파이프라인화  
+    리퀘스트 송신 후에 리스폰스까지 기다리다가 리퀘스트를 발행하던 것을 리스펀스를 기다리지 않고 다음 리퀘스트를 보낼 수 있도록 한다.  
+
+    - 쿠키를 통한 상태 관리  
+    stateless 프로토콜은 cpu나 메모리 같은 리소스의 소비 억제  
+    상태를 기록하기 위한 쿠키가 만들어짐  
+
+- TELNET  
+인터넷, 로컬 영역 네트워크 연결에 사용  
+23번 포트를 사용하는 것  
+터미널 에뮬레이션 프로토콜인 NVT 사용  
+보안이 추가된 것이 SSH  
+
+- FTP  
+TCP/IP 프로토콜을 가지고 서버와 클라이언트 사이의 파일 전송 담당  
+20번 포트(데이터), 21번 포트(제어)를 사용하는 것  
+Active : client가 21번 포트에 요청 전송 -> server가 요청 수신 -> 답신 -> server가 20번 채널에서 데이터 전송 -> client가 요청 수신 -> 답신  
+Passive : client가 21번 포트에 요청 전송 -> server가 요청 수신 -> 답신 -> client가 임시 채널에 데이터 전송 -> server가 요청 수신 -> 답신  
+더 간단하게 UDP 기반으로 파일 전송하는 것이 TFTP, 69번 포트 사용  
+
+- SMTP  
+TCP 25번 포트를 이용해 이메일을 보내기 위한 간이 전자 우편 전송 프로토콜  
+모든 문자가 7bit ASCII로 되어 있어야 한다.  
+POP3, IMAP와 함께 사용되어 서버 메일함에 저장하고 서버에서 주기적으로 메시지 다운로드  
+POP3 서버에 등록된 계정이 있어야 한다.(이메일주소)  
+```
+S: 220 smtp.example.com ESMTP Postfix
+C: HELO relay.example.org
+S: 250 Hello relay.example.org, I am glad to meet you
+C: MAIL FROM:＜bob@example.org＞
+S: 250 Ok
+C: RCPT TO:＜alice@example.com＞
+S: 250 Ok
+C: RCPT TO:＜theboss@example.com＞
+S: 250 Ok
+C: DATA
+S: 354 End data with ＜CR＞＜LF＞.＜CR＞＜LF＞
+C: From: "Bob Example" ＜bob@example.org＞
+C: To: "Alice Example" ＜alice@example.com＞
+C: Cc: theboss@example.com
+C: Date: Tue, 15 January 2008 16:02:43 -0500
+C: Subject: Test message
+C:
+C: Hello Alice.
+C: This is a test message with 5 header fields and 4 lines in the message body.
+C: Your friend,
+C: Bob
+C: .
+S: 250 Ok: queued as 12345
+C: QUIT
+S: 221 Bye
+{The server closes the connection}
+```  
+
+- DNS  
+DNS 리커서: 애플리케이션을 통해 클라이언트 컴퓨터로부터 쿼리를 받도록 고안된 서버  
+루트 이름 서버: 호스트 이름을 IP 주소로 변환하는 첫 단계, 특정 위치에 대한 참조로 사용  
+TLD(최상위 도메인) 이름 서버: 호스트 이름의 마지막 부분 호스팅  
+권한 있는 이름 서버: 최종 IP 주소를 dns 리커서에 반환  
+[참고](https://www.cloudflare.com/ko-kr/learning/dns/what-is-dns/)  
+
+- RARP  
+BOOTP보다 이전에 사용하던 것으로 MAC 주소로부터 IP 주소 추출  
+
+- BOOTP  
+TCP/IP에서 자동 부팅을 위한 최초의 표준프로토콜  
+IP주소, 부트 파일이 있는 서버 이름, 부트 파일 이름 세 정보를 제공받는다.  
+진보된 DHCP를 더 많이 사용한다.  
+IP address, subnet mask address, DNS address, gateway address 와 같은 네트워크 그룹에 가입하기 위해 필요한 정보나, domain상에서 통용되는 터미널의 이름을 전달해 준다.
+
+- SNMP  
+라우터, 스위치, 서버 등을 이용해 IP 네트워크 장치로부터 정보를 수집, 관리, 수정하는 데에 사용되는 프로토콜  
+컴퓨터 네트워크에서 호스트나 장치들의 그룹을 관리하는 일 수행  
+managed device(노드에 특화된 정보에 대한 접근 허용), agent(네트워크 관리 소프트웨어 모듈), Network management Station(디바이스 감시하고 제어하는 어플리케이션 실행)  
+
+Remote host management: Simple Network Management Protocol (SNMP), Common Management Information Protocol over TCP (CMOT)
