@@ -1,0 +1,95 @@
+### [Network] 네트워크 관점에서의 웹 동작 방식  
+인터넷이란? 컴퓨터들이 서로 통신할 수 있는 거대한 네트워크로 물리적/무선으로 연결되어야 한다.  
+하나씩 연결이 복잡해지는 것을 해결하기 위해 라우터 사용, 모든 것을 라우터에 보내고 라우터로부터 받는다. 라우터들도 추가해 라우터간 연결, 라우터를 통한 컴퓨터 연결이 된다.  
+네트워크를 ISP에 연결, ISP는 라우터를 관리하고, 다른 ISP에도 접근할 수 있다. 우리가 보내는 네트워크의 메시지는 ISP 네트워크의 네트워크를 통해 전달   
+
+
+1. 브라우저는 dns로 접속을 요청한다.  
+- 인터넷 서비스 제공업체(ISP)가 관리하는 DNS 해석기로 라우팅  
+라우팅이란? 라우터, 브릿지, 게이트웨이, 방화벽, 스위치와 같은 중간 지점을 거쳐 출발지부터 목적지까지 효율적으로 패킷의 전달을 하는 것  
+라우터란? 서로 다른 네트워크 간의 경로를 정해 패킷을 전달하는 장치, 네트워크 계층  
+브릿지란? 세그멘트를 연결하고 패킷을 전송하는 장비, LAN 간 전송, MAC, 데이터 링크 계층  
+스위치란? 허브처럼 포트에 들어온 것을 잘 나눠서 다른 포트로 전송하는 장치, IP+MAC, 데이터 링크 계층  
+게이트웨이란? 네트워크가 어디로 전송해야할지 연결해주는 장치, OSI 전계층  
+- ISP의 DNS 해석기가 요청을 DNS 루트 이름 서버에 전달해서 IP 주소 확보    
+도메인명은 트리 구조로 되어있다.  
+호스트명.제 3레벨 도메인(도메인명).제 2레벨 도메인.제 1레벨 도메인
+DNS 서버는 LAN 안에 있는 클라이언트로부터 조회 받아 클라이언트 대신 인터넷에 조회해주는 캐시 서버, 외부 호스트로부터 자신이 관리하는 도메인(zone 파일이란 db에서 관리) 조회받는 콘텐츠 서버로 나뉜다. 캐시서버가 트리의 오른쪽부터 도메인명 관리하는 서버 찾아 ip주소 알려주는 것이 `이름 해결`  
+이 dns 서버는 tcp, udp [둘 다 사용](https://docs.microsoft.com/ko-kr/troubleshoot/windows-server/networking/dns-works-on-tcp-and-udp)   
+
+
+2. 브라우저는 서버에게 웹사이트 사본을 달라는 HTTP 요청 메시지 만든다.  
+- http 요청 헤더  
+GET / HTTP/1.1 : HTTP전송 방법과 프로토콜 버전  
+Host: 요청하는 서버 주소  
+User-Agent: OS/브라우저 정보  
+Accept: 클라이언트 이해 가능한 컨텐츠 타입  
+Accept-Language: 클라이언트 인식 언어  
+Accept-Encoding: 클라이언트 인코딩 방법  
+Connection: 전송 완료후 접속 유지 정보 (keep-alive)  
+Upgrade-Insecure-Requests:신호를 보낼때 데이터 암호화 여부  
+Content-Type: 클라이언트에게 반환되어야하는 컨텐츠 유형  
+Content-Length: 본문크기  
+
+3. 메시지를 서버로 전송, 이 때 브라우저는 서버와 TCP 커넥션을 맺는 것과 같은 TCP/IP 연결을 통해 전송됨  
+[참고](https://better-together.tistory.com/110)  
+[패킷 구경](https://codetronik.tistory.com/88)  
+- TCP/IP란?  
+OSI 계층에서 통용적으로 사용되는 계층  
+인터넷과 관련된 다양한 프로토콜의 집합(IEEE, DNS, HTTP, TCP, IP, ICMP ...)으로 일반적인 네트워크를 동작시킨다.  
+
+    - application layer  
+    File Transfer Protocol, DNS, HTTP와 같이 유저에게 제공되는 어플리케이션에서 사용하는 통신의 움직임을 제어하는 계층  
+    HyperText Transfer Protocol + Domain Name System: 클라이언트(웹 브라우저) <-> 서버  
+    
+    - transport layer  
+    Transmission Control Protocol, User Data Protocol과 같이 어플리케이션 계층에 네트워크로 접속되어 있는 두 대의 컴퓨터 사이의 데이터 흐름 제공  
+    TCP: 큰 데이터를 보내기 쉽게 TCP 세그먼트란 단위 패킷으로 작게 분해해 관리하는 것(바이트 스트림 서비스)을 제공하는 것으로 데이터를 분해해 보내고 잘 갔는지 확인하는 역할  
+    three way handshaking이라는 방법을 사용해 데이터를 전송하고 이중 하나라도 실패하면 다시 전송    
+    ```
+    송신측은 SYN 플래그로 상대에게 접속함과 동시에 패킷을 보냄  
+    수신측은 SYN/ACK 플래그로 송신측에 접속함과 동시에 패킷 수신  
+    송신측이 ACK 플래그를 보내 완료 확인
+    ```
+
+    - network layer  
+    네트워크 상에서 이동 경로를 포함해 패킷(전송하는 데이터의 최소 단위)의 이동 제어  
+    Internet Protocol(IP): 패킷을 상대방에게 전달(Media Access Control Address는 각 네트워크 카드에 할당된 고유의 주소)  
+    IP 통신은 다음 중계할 곳인 MAC 주소를 찾아가며 이루어진다. MAC은 변하지 않는다.  
+    목적지를 찾아가면서도 Address Resolution Protocol이 사용되는데 이는 수신지의 IP 주소를 바탕으로 MAC 주소 찾는다.  
+
+    - link layer  
+    하드웨어 측면으로 디바이스 드라이버, Network Interface Card와 같은 물리적인 부분  
+
+송신 계층을 거칠 때마다 헤더를 더해 캡슐화 하고, 수신 계층을 거칠때마다 헤더를 삭제하며 데이터 전달  
+`송신 ---HTTP message--->  HTTP data ---TCP segment---> +TCP header ---IP datagram---> +IP header ---network frame---> +Ethernet header`  
+
+- World Wide Web을 구성하는 HyperText Markup Language  
+- `Uniform Resource Identifier`는 `Uniform Resource Locator`의 서브셋으로 차례대로 `스키마, 자격정보, 서버주소, 서버포트, 계층적 파일 경로, 쿼리 문자열, 프래그먼트 식별자` 전달  
+
+- HTTP 요청  
+HTML 문서 같은 리소스들을 가져올 수 있도록 해주는 프로토콜(데이터 교환 방식을 정하는 규칙의 집합, 헤더, 메서드, 바디 등등)  
+    - response 헤더  
+    HTTP/1.1 200 ok : 프로토콜 버전과 응답상태  
+    Access-Control-Allow-Origin: 서버에 타 사이트의 접근을 제한하는 방침  
+    Connection: 전송 완료후 접속 유지 정보 (keep-alive)  
+    Content-Encoding: 미디어 타입을 압축한 방법  
+    Date: 헤더가 만들어진 시간  
+    ETag: 버전의 리소스를 식별하는 식별자  
+    Keep-Alive: 연결에대한 타임아웃과 요청 최대 개수 정보  
+    Last-Modified: 웹 시간을 가지고 있다 수정되었을때만 데이터 변경 ( 캐시연관 )  
+    Server: 웹서버로 사용되는 프로그램 이름  
+    Set-Cookie: 쿠키 정보  
+    Transfer-Encoding: 인코딩 형식 지정  
+    X-Frame-Options: frame/iframe/object 허용 여부  
+    - 바디  
+
+4. 서버는 클라이언트의 요청을 받아 처리하고, 그에 따른 HTTP 응답 메시지를 작성한다.  
+- 데이터 처리 과정  
+Controller <-> Service <-> Repository <-> DB  
+
+5. 서버는 클라이언트와 TCP 연결을 맺는다.  
+
+6. 메시지를 전송한다.  
+
+7. 연결을 close하면 클라이언트는 http 바인딩  
