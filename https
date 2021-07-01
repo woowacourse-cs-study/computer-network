@@ -1,0 +1,69 @@
+### HTTPS  
+http에 tls 보안을 추가한게 https  
+
+1. Secure Sockets Layer  
+웹사이트와 브라우저 사이에 전송된 데이터를 암호화하여 보안을 유지하는 표준 기술(프로토콜)이었는데 이제 TLS로 더 많이 불리운다.  
+
+2. Trasport Layer Security  
+Application Layer <----TLS Layer----> Transport Layer  
+
+Tranfer Layser Security로 전송 계층에서 보안을 설정하는 것을 이야기한다. SSL이라고 웹 사이트와 브라우저 간 데이터를 암호화하여 유지하는 기술을 사용한다.  
+패킷 스니핑을 하면 전송계층에서 보내지는 패킷이 무엇인지 볼 수 있는데 tcp/ip는 이 데이터가 평문이라 중요한 정보를 탈취하기 쉽다.  
+이를 피하기 위해 tls라는 설정을 사용해 데이터를 암호화한다.  
+tls는 데이터를 암호화하여 주고받는다. 이 과정에서 클라이언트와 서버 간의 인증이 유효한지, 세션키가 존재하는지 등의 확인을 handshake로 하는 과정이 존재한다.  
+
+    [핸드셰이크 과정](https://namu.wiki/w/TLS#s-1.3.5)  
+    1. Client Hello: 클라이언트는 서버에게 지원 가능한 방식(암호, 키교환, 서명 등)을 서버에 알려준다.  
+    2. Server Hello: 서버는 클라이언트에게 지원 가능한 방식을 응답  
+    3. Certificate Message: 서버는 공개키(RSA 암호)가 포함된 서버 인증서 클라이언트에 발송  
+    4. Server Hello Done: 서버의 전송 끝나면 메시지 전달  
+    5. Client Certificate: 서버가 클라이언트 인증서를 요구할 때 클라이언트가 서버에 인증하기 위한 SSL 인증서 전송  
+    6. 클라이언트는 전송받은 서버 인증서가 유효한지 확인하고, 세션키로 사용될 `Pre-Master Key`를 랜덤으로 생성해 공개키로 암호화해 서버로 전송,  ClientKeyExchange 메시지에 Pre-Master Key가 포함된다.  
+    7. 서버는 자신의 개인키로 클라이언트에게 전송받은 세션키(대칭키) 복호화해서 `Pre-Master key`를 알아낸뒤 이를 이용해 master secret 생성  
+    이후로 master secret에서 세션 키 생성해내고 서버-클라이언트 간 통신을 암호화하는 데에 사용한다.  
+    8. 서로에게 `ChangeCipherSpec` 메시지를 보내고, `Finished` 메시지를 보내 과정이 끝남을 알린다.  
+
+이렇게 설정된 tls와 같이 비즈니스 로직이 아닌 과정에서 문제를 일으키고 싶지 않은 경우 reverse proxy를 사용한다. 대표적으로 nginx와 같은 기술로 구현되는 리버스 프록시는 지역끼리 연결된 것을 wan으로 관리되도록 도와주는 포워드 프록시와 다르게 wan을 lan으로 옳겨준다.  
+사용자가 접근하면 자신과 lan으로 연결된 비즈니스 로직에 요청을 전송하는데 이 과정에서 tls가 적용되어 암호화 된 것이 proxy로, 프록시에서 그 암호를 풀어 비즈니스 로직으로 전송하는 과정이 이루어진다.  
+포워드 프록시는 여러 클라이언트에 대해 적용되고, 리버스 프록시는 여러 서버에 대해 적용된다.  
+리버스 프록시를 통해 보안성, 성능, 확장성 등이 상승될 수 있다.  
+
+공개키를 보내고 인증을 받으면 공유키로 http 전송을 하도록 하는 것  
+
+3. Reverse Proxy  
+Client <--> Internet <--> Proxy <--> Web server  
+was가 비즈니스 로직만 담당하도록 하고 TLS와 같은 부수적인 기능으로 영향을 주고 싶지 않을 때 사용  
+load balancing, 보안성(백엔드 infra 숨김), 확장성, 웹 속도 향상, 압축/ssl 처리로 백엔드 자원 확보/캐싱  
+
+`Reverse Proxy`는 클라이언트로부터 요청을 받아서 적절한 웹 서버로 요청 전송 -> 웹 서버는 요청 받아 처리 후 `reverse proxy`로 반환 -> `reverse proxy`는 응답을 클라이언트로 반환  
+- (foward) proxy: LAN -> WAN 요청 대리 수행, 여러 클라이언트에 대한 프록시로 클라이언트에 더 가깝다.    
+- reverse proxy: WAN -> LAN 요청 대리 수행, 여러 서버에 대한 프록시로 서버에 더 가까이 존재한다.    
+ex) nginX  
+
+4. nginX
+http로 들어오면 httpsㄹ redirect하는 역할  
+http 서버의 역할: 정보를 웹 브라우저에 전송하는 역할  
+리버스 프록시 역할: 가짜 서버에 클라이언트가 요청하면 프록시 서버가 reverse 서버로부터 데이터 가져오는 역할  
+[참고](https://brainbackdoor.tistory.com/113)  
+
+5. load balancer  
+하나의 서버의 성능을 높이는 것을 scale up  
+여러 대의 서버가 분산 처리할 수 있도록 작업을 나눠주는 서비스  
+서버에 접근하는 작업량을 특정 알고리즘에 의해 분산시켜 부하를 분산해주고, 서버상태를 체크하고, 세션 관리를 해준다.  
+l4, l7이 존재하는데 전송계층, 표현 계층에서 적용되는 차이가 있다.  
+
+사용 알고리즘
+- round robin: 요청을 순서대로 각 서버에 배분  
+- Least Connection: 서버에 연결되어 있는 수가 가장 적은 서버에 연결  
+- Weighted Least Connection: 서버의 처리 능력에 가중치를 두어 가중치와 least conneciton을 종합 판단해 적절한 서버에 연결  
+- Fastest Response Time: 가장 빨리 응답하는 서버에 연결 
+- Hashing: 사용자의 IP를 해싱해 연결, 동일한 사용자는 동일한 서버에 연결  
+
+종류
+- L4: Transport layer에서 수행, 패킷 레벨에서 밸런싱해 빠르고 안전, 저렴, 섬세한 라우팅 불가능, 연속적인 서비스 제공 불가  
+- L7: Application layer애서 수행, 캐싱 기능, 섬세한 라우팅, 비정상적인 트래픽 사전 필터링 가능, 비쌈, 보안 상 위험  
+
+이점  
+- 비용 절감  
+- SPOF 해결: 단일 서버 에러 발생 시 모든 동작 불가능한 것 해결  
+- 확장 용이성: 더 많은 사용자에 대해 서버 확장 시 용이  
