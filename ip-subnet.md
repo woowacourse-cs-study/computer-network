@@ -14,8 +14,8 @@
 - source 와 destination 주소가 32 bit
 - 32자리로 이루어진 2진수
   하나의 10진수는 8자리의 2진수로 대체되고 이를 `옥텟` 이라고 부름  
-  즉, IP주소는 4개의 옥텟으로 구성됨
-  <img src="./img/ipsubnet1.png" width="550" />
+  즉, IP주소는 4개의 옥텟으로 구성됨  
+<img src="./img/ipsubnet1.png" width="550" />
 
 ### IP주소 vs MAC주소
 - IP주소
